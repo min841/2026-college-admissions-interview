@@ -22,24 +22,21 @@
         .fc-event { cursor: pointer; border: none !important; }
         .fc-toolbar-title { font-size: 1.1rem !important; font-weight: bold; }
 
-        /* 🖨️ A4 용지 딱 맞춤 인쇄 전용 스타일 */
+        /* 🖨️ A4 용지 완벽 맞춤 인쇄 스타일 */
         @media print {
-            /* 기본 A4 여백 최적화 */
+            /* 목록 보기 기본: A4 세로 */
             @page {
                 size: A4 portrait;
-                margin: 10mm;
-            }
-
-            /* 달력 보기 시 가로 방향(Landscape) 자동 전환 */
-            body.is-calendar-view {
-                page: landscape;
-            }
-            body.is-calendar-view @page {
-                size: A4 landscape;
                 margin: 8mm;
             }
 
-            /* 불필요한 요소 완벽 숨김 */
+            /* 달력 보기 시 A4 가로 방향 강제 설정 */
+            body.is-calendar-view @page {
+                size: A4 landscape;
+                margin: 5mm;
+            }
+
+            /* 불필요한 레이아웃 숨기기 */
             header, 
             #class-tab-group-container, 
             #filter-bar, 
@@ -48,7 +45,6 @@
                 display: none !important;
             }
 
-            /* 전체 레이아웃 리셋 */
             body, main {
                 background: white !important;
                 color: black !important;
@@ -59,17 +55,16 @@
                 box-shadow: none !important;
             }
 
-            /* 인쇄 시 색상/배경 유지 */
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
 
-            /* 목록 보기 카드가 중간에서 잘리지 않도록 설정 */
+            /* 1. 목록 보기 스타일 */
             #view-list-container {
                 display: grid !important;
                 grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                gap: 12px !important;
+                gap: 10px !important;
             }
 
             #view-list-container > div {
@@ -79,23 +74,53 @@
                 box-shadow: none !important;
             }
 
-            /* 달력 크기 A4 가득 차게 맞춤 */
+            /* 2. 달력 보기 A4 가로 한 장 완벽 맞춤 스타일 */
             #view-calendar-container {
                 display: block !important;
                 width: 100% !important;
-                height: 100% !important;
+                max-width: 100% !important;
                 padding: 0 !important;
+                margin: 0 !important;
                 border: none !important;
                 box-shadow: none !important;
+                overflow: hidden !important;
+            }
+
+            #calendar {
+                width: 100% !important;
+                max-width: 100% !important;
             }
 
             .fc {
+                width: 100% !important;
                 max-width: 100% !important;
-                height: 90vh !important;
+                height: 180mm !important; /* A4 가로 높이에 딱 맞게 고정 */
             }
 
-            .fc-view-harness {
-                height: 100% !important;
+            .fc table {
+                width: 100% !important;
+                table-layout: fixed !important; /* 요일 셀 비율 동일 유지 (토요일 안잘림) */
+            }
+
+            .fc-col-header-cell, .fc-daygrid-day {
+                width: 14.28% !important; /* 7등분 정확히 고정 */
+            }
+
+            .fc-daygrid-day-frame {
+                min-height: 0 !important;
+            }
+
+            .fc-event-title {
+                font-size: 10px !important;
+                font-weight: bold;
+            }
+
+            .fc-toolbar {
+                margin-bottom: 5px !important;
+            }
+
+            .fc-toolbar-title {
+                font-size: 1.2rem !important;
             }
         }
     </style>
@@ -412,7 +437,7 @@
             }
             setTimeout(() => {
                 window.print();
-            }, 100);
+            }, 150);
         }
 
         function openModal() {
