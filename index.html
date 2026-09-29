@@ -22,26 +22,27 @@
         .fc-event { cursor: pointer; border: none !important; }
         .fc-toolbar-title { font-size: 1.1rem !important; font-weight: bold; }
 
-        /* 🖨️ A4 용지 완벽 맞춤 인쇄 스타일 */
+        /* 🖨️ A4 용지 인쇄 맞춤 스타일 */
         @media print {
-            /* 목록 보기 기본: A4 세로 */
+            /* 1. 기본 인쇄 페이지 설정 (목록 모드: 세로, 달력 모드: 가로) */
             @page {
                 size: A4 portrait;
                 margin: 8mm;
             }
 
-            /* 달력 보기 시 A4 가로 방향 강제 설정 */
             body.is-calendar-view @page {
                 size: A4 landscape;
                 margin: 5mm;
             }
 
-            /* 불필요한 레이아웃 숨기기 */
+            /* 2. 화면 공통 요소 숨기기 */
             header, 
             #class-tab-group-container, 
             #filter-bar, 
             .no-print,
-            button {
+            button,
+            .fc-button,
+            .fc-header-toolbar {
                 display: none !important;
             }
 
@@ -60,11 +61,15 @@
                 print-color-adjust: exact !important;
             }
 
-            /* 1. 목록 보기 스타일 */
-            #view-list-container {
+            /* 3. [목록 보기] 상태일 때 인쇄 처리 */
+            body:not(.is-calendar-view) #view-list-container {
                 display: grid !important;
                 grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                 gap: 10px !important;
+            }
+
+            body:not(.is-calendar-view) #view-calendar-container {
+                display: none !important;
             }
 
             #view-list-container > div {
@@ -74,8 +79,12 @@
                 box-shadow: none !important;
             }
 
-            /* 2. 달력 보기 A4 가로 한 장 완벽 맞춤 스타일 */
-            #view-calendar-container {
+            /* 4. [달력 보기] 상태일 때 인쇄 처리 (목록 완전 숨김 & 달력만 표시) */
+            body.is-calendar-view #view-list-container {
+                display: none !important;
+            }
+
+            body.is-calendar-view #view-calendar-container {
                 display: block !important;
                 width: 100% !important;
                 max-width: 100% !important;
@@ -86,41 +95,34 @@
                 overflow: hidden !important;
             }
 
-            #calendar {
+            body.is-calendar-view #calendar {
                 width: 100% !important;
                 max-width: 100% !important;
             }
 
-            .fc {
+            body.is-calendar-view .fc {
                 width: 100% !important;
                 max-width: 100% !important;
-                height: 180mm !important;
+                height: 180mm !important; /* A4 가로 한 장 높이에 고정 */
             }
 
-            .fc table {
+            body.is-calendar-view .fc table {
                 width: 100% !important;
-                table-layout: fixed !important;
+                table-layout: fixed !important; /* 7개 요일 칸 크기 동일 고정 (토요일 안잘림) */
             }
 
-            .fc-col-header-cell, .fc-daygrid-day {
+            body.is-calendar-view .fc-col-header-cell, 
+            body.is-calendar-view .fc-daygrid-day {
                 width: 14.28% !important;
             }
 
-            .fc-daygrid-day-frame {
+            body.is-calendar-view .fc-daygrid-day-frame {
                 min-height: 0 !important;
             }
 
-            .fc-event-title {
+            body.is-calendar-view .fc-event-title {
                 font-size: 10px !important;
                 font-weight: bold;
-            }
-
-            .fc-toolbar {
-                margin-bottom: 5px !important;
-            }
-
-            .fc-toolbar-title {
-                font-size: 1.2rem !important;
             }
         }
     </style>
@@ -532,12 +534,10 @@
 
             try {
                 if (editId) {
-                    /* 수정 로직 */
                     await db.collection("schedules").doc(editId).update({
                         className, type, studentName, university, dateIso, timeText
                     });
                 } else {
-                    /* 신규 등록 로직 */
                     await db.collection("schedules").add({
                         className, type, studentName, university, dateIso, timeText, createdAt: new Date()
                     });
