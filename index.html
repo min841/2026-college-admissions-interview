@@ -22,9 +22,24 @@
         .fc-event { cursor: pointer; border: none !important; }
         .fc-toolbar-title { font-size: 1.1rem !important; font-weight: bold; }
 
-        /* 🖨️ 인쇄 스타일 설정 */
+        /* 🖨️ A4 용지 딱 맞춤 인쇄 전용 스타일 */
         @media print {
-            /* 인쇄 시 불필요한 영역 숨기기 */
+            /* 기본 A4 여백 최적화 */
+            @page {
+                size: A4 portrait;
+                margin: 10mm;
+            }
+
+            /* 달력 보기 시 가로 방향(Landscape) 자동 전환 */
+            body.is-calendar-view {
+                page: landscape;
+            }
+            body.is-calendar-view @page {
+                size: A4 landscape;
+                margin: 8mm;
+            }
+
+            /* 불필요한 요소 완벽 숨김 */
             header, 
             #class-tab-group-container, 
             #filter-bar, 
@@ -33,30 +48,54 @@
                 display: none !important;
             }
 
-            body {
-                background-color: white !important;
+            /* 전체 레이아웃 리셋 */
+            body, main {
+                background: white !important;
                 color: black !important;
-            }
-
-            main {
+                width: 100% !important;
                 max-width: 100% !important;
-                padding: 0 !important;
                 margin: 0 !important;
-            }
-
-            /* 카드 및 달력 테두리 보정 */
-            .border {
-                border-color: #cbd5e1 !important;
-            }
-
-            #view-calendar-container {
-                box-shadow: none !important;
-                border: none !important;
                 padding: 0 !important;
+                box-shadow: none !important;
             }
 
-            .fc-header-toolbar {
-                margin-bottom: 1rem !important;
+            /* 인쇄 시 색상/배경 유지 */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* 목록 보기 카드가 중간에서 잘리지 않도록 설정 */
+            #view-list-container {
+                display: grid !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 12px !important;
+            }
+
+            #view-list-container > div {
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+                border: 1px solid #cbd5e1 !important;
+                box-shadow: none !important;
+            }
+
+            /* 달력 크기 A4 가득 차게 맞춤 */
+            #view-calendar-container {
+                display: block !important;
+                width: 100% !important;
+                height: 100% !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+
+            .fc {
+                max-width: 100% !important;
+                height: 90vh !important;
+            }
+
+            .fc-view-harness {
+                height: 100% !important;
             }
         }
     </style>
@@ -84,7 +123,7 @@
                     </div>
 
                     <!-- 프린트 버튼 -->
-                    <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded-lg font-medium text-xs transition flex items-center shadow">
+                    <button onclick="triggerPrint()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded-lg font-medium text-xs transition flex items-center shadow">
                         <i class="fa-solid fa-print mr-1.5"></i> 인쇄하기
                     </button>
 
@@ -269,12 +308,14 @@
             const filterBar = document.getElementById('filter-bar');
 
             if (view === 'list') {
+                document.body.classList.remove('is-calendar-view');
                 btnList.className = "px-3 py-1.5 rounded-md text-xs font-bold bg-white text-blue-600 shadow-sm transition";
                 btnCal.className = "px-3 py-1.5 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition";
                 listContainer.classList.remove('hidden');
                 calContainer.classList.add('hidden');
                 filterBar.classList.remove('hidden');
             } else {
+                document.body.classList.add('is-calendar-view');
                 btnCal.className = "px-3 py-1.5 rounded-md text-xs font-bold bg-white text-blue-600 shadow-sm transition";
                 btnList.className = "px-3 py-1.5 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition";
                 listContainer.classList.add('hidden');
@@ -365,6 +406,15 @@
             }
         }
 
+        function triggerPrint() {
+            if (currentView === 'calendar' && calendar) {
+                calendar.updateSize();
+            }
+            setTimeout(() => {
+                window.print();
+            }, 100);
+        }
+
         function openModal() {
             document.getElementById('schedule-form').reset();
             document.getElementById('schedule-modal').classList.remove('hidden');
@@ -402,7 +452,6 @@
             }
         }
 
-        // CSV 파일 일괄 처리
         async function processCsvUpload() {
             const fileInput = document.getElementById('csv-file-input');
             if (!fileInput.files.length) {
