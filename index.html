@@ -22,33 +22,19 @@
         .fc-event { cursor: pointer; border: none !important; }
         .fc-toolbar-title { font-size: 1.1rem !important; font-weight: bold; }
 
-        /* 🖨️ A4 용지 딱 맞춤 인쇄 전용 스타일 */
+        /* 🖨️ 인쇄 모드 제어 */
         @media print {
-            /* 기본 A4 여백 최적화 */
-            @page {
-                size: A4 portrait;
-                margin: 10mm;
-            }
-
-            /* 달력 보기 시 가로 방향(Landscape) 자동 전환 */
-            body.is-calendar-view {
-                page: landscape;
-            }
-            body.is-calendar-view @page {
-                size: A4 landscape;
-                margin: 8mm;
-            }
-
-            /* 불필요한 요소 완벽 숨김 */
+            /* 기본 세팅: 모든 화면 UI 숨김 */
             header, 
             #class-tab-group-container, 
             #filter-bar, 
             .no-print,
-            button {
+            button,
+            .fc-button,
+            .fc-header-toolbar {
                 display: none !important;
             }
 
-            /* 전체 레이아웃 리셋 */
             body, main {
                 background: white !important;
                 color: black !important;
@@ -59,43 +45,94 @@
                 box-shadow: none !important;
             }
 
-            /* 인쇄 시 색상/배경 유지 */
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
 
-            /* 목록 보기 카드가 중간에서 잘리지 않도록 설정 */
-            #view-list-container {
-                display: grid !important;
-                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                gap: 12px !important;
+            /* --- 1. [목록 전용 인쇄 모드] --- */
+            body.print-mode-list {
+                @page { size: A4 portrait; margin: 8mm; }
             }
 
-            #view-list-container > div {
+            body.print-mode-list #view-list-container {
+                display: grid !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 10px !important;
+            }
+
+            body.print-mode-list #view-calendar-container {
+                display: none !important;
+            }
+
+            body.print-mode-list #view-list-container > div {
                 break-inside: avoid !important;
                 page-break-inside: avoid !important;
                 border: 1px solid #cbd5e1 !important;
                 box-shadow: none !important;
             }
 
-            /* 달력 크기 A4 가득 차게 맞춤 */
-            #view-calendar-container {
+            /* --- 2. [달력 전용 인쇄 모드] --- */
+            body.print-mode-calendar {
+                @page { size: A4 landscape; margin: 5mm; }
+            }
+
+            body.print-mode-calendar #view-list-container {
+                display: none !important;
+            }
+
+            body.print-mode-calendar #view-calendar-container {
                 display: block !important;
                 width: 100% !important;
-                height: 100% !important;
+                max-width: 100% !important;
                 padding: 0 !important;
+                margin: 0 !important;
                 border: none !important;
                 box-shadow: none !important;
+                overflow: hidden !important;
             }
 
-            .fc {
+            body.print-mode-calendar #calendar {
+                width: 100% !important;
                 max-width: 100% !important;
-                height: 90vh !important;
+                height: auto !important;
             }
 
-            .fc-view-harness {
+            body.print-mode-calendar .fc {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 175mm !important; /* A4 가로 한 장에 딱 맞추는 최적 높이 */
+            }
+
+            body.print-mode-calendar .fc-view-harness {
                 height: 100% !important;
+            }
+
+            body.print-mode-calendar .fc-table, 
+            body.print-mode-calendar .fc-scrollgrid {
+                height: 100% !important;
+            }
+
+            body.print-mode-calendar .fc-daygrid-day-frame {
+                min-height: 0 !important;
+                height: 100% !important;
+            }
+
+            body.print-mode-calendar .fc-col-header-cell, 
+            body.print-mode-calendar .fc-daygrid-day {
+                width: 14.28% !important;
+            }
+
+            body.print-mode-calendar .fc-event-title {
+                font-size: 9px !important;
+                line-height: 1.1 !important;
+                font-weight: bold;
+            }
+
+            body.print-mode-calendar .fc-daygrid-event {
+                margin-top: 1px !important;
+                margin-bottom: 1px !important;
+                padding: 1px 2px !important;
             }
         }
     </style>
@@ -112,7 +149,7 @@
                     <span id="sync-status" class="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-medium">연결 중...</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <!-- 보기 방식 전환 -->
+                    <!-- 화면 보기 방식 전환 -->
                     <div class="bg-slate-100 p-1 rounded-lg flex space-x-1 mr-1">
                         <button id="btn-view-list" onclick="switchView('list')" class="px-3 py-1.5 rounded-md text-xs font-bold bg-white text-blue-600 shadow-sm transition">
                             <i class="fa-solid fa-list mr-1"></i>목록
@@ -122,8 +159,8 @@
                         </button>
                     </div>
 
-                    <!-- 프린트 버튼 -->
-                    <button onclick="triggerPrint()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded-lg font-medium text-xs transition flex items-center shadow">
+                    <!-- 통합 인쇄하기 버튼 (클릭 시 선택 모달) -->
+                    <button onclick="openPrintModal()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-lg font-medium text-xs transition flex items-center shadow">
                         <i class="fa-solid fa-print mr-1.5"></i> 인쇄하기
                     </button>
 
@@ -189,14 +226,39 @@
         </div>
     </main>
 
-    <!-- 개별 일정 등록 모달 -->
+    <!-- 🖨️ 인쇄 방식 선택 모달 -->
+    <div id="print-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl text-center">
+            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+                <i class="fa-solid fa-print"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1">인쇄 양식 선택</h3>
+            <p class="text-xs text-slate-500 mb-5">원하시는 출력 형식을 선택해 주세요.</p>
+
+            <div class="space-y-2">
+                <button onclick="executePrint('list')" class="w-full bg-slate-800 hover:bg-slate-900 text-white p-3 rounded-xl text-xs font-bold transition flex items-center justify-between shadow-sm">
+                    <span class="flex items-center"><i class="fa-solid fa-list-ul mr-2 text-blue-400"></i> 목록 형태로 인쇄</span>
+                    <span class="text-[10px] text-slate-400 font-normal">A4 세로</span>
+                </button>
+                <button onclick="executePrint('calendar')" class="w-full bg-slate-800 hover:bg-slate-900 text-white p-3 rounded-xl text-xs font-bold transition flex items-center justify-between shadow-sm">
+                    <span class="flex items-center"><i class="fa-regular fa-calendar-days mr-2 text-emerald-400"></i> 달력 형태로 인쇄</span>
+                    <span class="text-[10px] text-slate-400 font-normal">A4 가로 한 장</span>
+                </button>
+            </div>
+
+            <button onclick="closePrintModal()" class="mt-4 text-xs text-slate-400 hover:text-slate-600 font-medium">닫기</button>
+        </div>
+    </div>
+
+    <!-- 개별 일정 등록/수정 모달 -->
     <div id="schedule-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 no-print">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-slate-900">학생 면접/논술 일정 등록</h2>
+                <h2 id="modal-title" class="text-lg font-bold text-slate-900">학생 면접/논술 일정 등록</h2>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <form id="schedule-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="form-edit-id">
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">반 선택 *</label>
@@ -231,6 +293,20 @@
                     <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-medium transition">저장하기</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 달력 이벤트 클릭 시 액션 모달 -->
+    <div id="action-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl text-center">
+            <h3 class="text-lg font-bold text-slate-900 mb-1" id="action-modal-title">학생 일정 관리</h3>
+            <p class="text-xs text-slate-500 mb-5" id="action-modal-desc">원하시는 작업을 선택해 주세요.</p>
+            
+            <div class="flex space-x-2">
+                <button onclick="closeActionModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-medium transition">취소</button>
+                <button onclick="onEditFromModal()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-medium transition">수정</button>
+                <button onclick="onDeleteFromModal()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white py-2.5 rounded-lg text-sm font-medium transition">삭제</button>
+            </div>
         </div>
     </div>
 
@@ -282,6 +358,7 @@
         let currentClass = 'all';
         let currentView = 'list';
         let calendar = null;
+        let selectedScheduleId = null;
 
         function initDataSync() {
             db.collection("schedules").onSnapshot((snapshot) => {
@@ -294,7 +371,7 @@
                 renderApp();
             }, (error) => {
                 console.error("Firestore error:", error);
-                document.getElementById('sync-status').innerText = '연결 오류 (규칙 확인 필요)';
+                document.getElementById('sync-status').innerText = '연결 오류';
                 document.getElementById('sync-status').className = 'text-xs bg-red-100 text-red-800 px-2.5 py-1 rounded-full font-medium';
             });
         }
@@ -305,22 +382,17 @@
             const btnCal = document.getElementById('btn-view-cal');
             const listContainer = document.getElementById('view-list-container');
             const calContainer = document.getElementById('view-calendar-container');
-            const filterBar = document.getElementById('filter-bar');
 
             if (view === 'list') {
-                document.body.classList.remove('is-calendar-view');
                 btnList.className = "px-3 py-1.5 rounded-md text-xs font-bold bg-white text-blue-600 shadow-sm transition";
                 btnCal.className = "px-3 py-1.5 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition";
                 listContainer.classList.remove('hidden');
                 calContainer.classList.add('hidden');
-                filterBar.classList.remove('hidden');
             } else {
-                document.body.classList.add('is-calendar-view');
                 btnCal.className = "px-3 py-1.5 rounded-md text-xs font-bold bg-white text-blue-600 shadow-sm transition";
                 btnList.className = "px-3 py-1.5 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition";
                 listContainer.classList.add('hidden');
                 calContainer.classList.remove('hidden');
-                filterBar.classList.add('hidden');
                 initCalendar();
             }
             renderApp();
@@ -368,7 +440,10 @@
                             <h4 class="font-semibold text-slate-700 text-sm mb-1"><i class="fa-solid fa-university mr-1.5 text-slate-400"></i>${escapeHtml(item.university)}</h4>
                             <p class="text-xs text-slate-500"><i class="fa-regular fa-clock mr-1 text-slate-400"></i>${escapeHtml(item.dateIso)} ${escapeHtml(item.timeText || '')}</p>
                         </div>
-                        <button onclick="deleteSchedule('${item.id}')" class="text-slate-300 hover:text-red-500 p-1.5 transition no-print"><i class="fa-solid fa-trash-can"></i></button>
+                        <div class="flex items-center space-x-1 no-print">
+                            <button onclick="openEditModal('${item.id}')" class="text-slate-400 hover:text-blue-600 p-1.5 transition"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="deleteSchedule('${item.id}')" class="text-slate-300 hover:text-red-500 p-1.5 transition"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
                     </div>
                 `).join('');
             } else if (calendar) {
@@ -389,15 +464,14 @@
                 calendar = new FullCalendar.Calendar(calendarEl, {
                     initialView: 'dayGridMonth',
                     locale: 'ko',
+                    height: 'auto',
                     headerToolbar: {
                         left: 'prev,next today',
                         center: 'title',
                         right: 'dayGridMonth,listMonth'
                     },
                     eventClick: function(info) {
-                        if (confirm(`'${info.event.title}' 일정을 삭제하시겠습니까?`)) {
-                            deleteSchedule(info.event.id);
-                        }
+                        openActionModal(info.event.id);
                     }
                 });
                 calendar.render();
@@ -406,17 +480,83 @@
             }
         }
 
-        function triggerPrint() {
-            if (currentView === 'calendar' && calendar) {
-                calendar.updateSize();
+        /* 🖨️ 인쇄 제어 모달 및 기능 */
+        function openPrintModal() {
+            document.getElementById('print-modal').classList.remove('hidden');
+        }
+
+        function closePrintModal() {
+            document.getElementById('print-modal').classList.add('hidden');
+        }
+
+        function executePrint(mode) {
+            closePrintModal();
+
+            // 인쇄 모드 클래스 설정
+            document.body.classList.remove('print-mode-list', 'print-mode-calendar');
+            document.body.classList.add(`print-mode-${mode}`);
+
+            if (mode === 'calendar') {
+                switchView('calendar');
+                setTimeout(() => {
+                    if (calendar) calendar.updateSize();
+                    window.print();
+                }, 250);
+            } else {
+                switchView('list');
+                setTimeout(() => {
+                    window.print();
+                }, 150);
             }
-            setTimeout(() => {
-                window.print();
-            }, 100);
+        }
+
+        /* 기타 모달 제어 */
+        function openActionModal(id) {
+            selectedScheduleId = id;
+            const item = schedules.find(s => s.id === id);
+            if (item) {
+                document.getElementById('action-modal-title').innerText = `${item.studentName} 학생 일정`;
+                document.getElementById('action-modal-desc').innerText = `[${item.className}] ${item.university} (${item.dateIso})`;
+                document.getElementById('action-modal').classList.remove('hidden');
+            }
+        }
+
+        function closeActionModal() {
+            document.getElementById('action-modal').classList.add('hidden');
+        }
+
+        function onEditFromModal() {
+            const id = selectedScheduleId;
+            closeActionModal();
+            openEditModal(id);
+        }
+
+        function onDeleteFromModal() {
+            const id = selectedScheduleId;
+            closeActionModal();
+            deleteSchedule(id);
         }
 
         function openModal() {
             document.getElementById('schedule-form').reset();
+            document.getElementById('form-edit-id').value = '';
+            document.getElementById('modal-title').innerText = '학생 면접/논술 일정 등록';
+            document.getElementById('schedule-modal').classList.remove('hidden');
+        }
+
+        function openEditModal(id) {
+            const item = schedules.find(s => s.id === id);
+            if (!item) return;
+
+            document.getElementById('form-edit-id').value = item.id;
+            document.getElementById('form-class').value = item.className || '1반';
+            document.getElementById('form-type').value = item.type || '면접';
+            document.getElementById('form-student').value = item.studentName || '';
+            document.getElementById('form-university').value = item.university || '';
+            document.getElementById('form-date-picker').value = item.dateIso || '';
+            document.getElementById('form-date-text').value = item.timeText || '';
+
+            document.getElementById('modal-title').innerText = '학생 면접/논술 일정 수정';
             document.getElementById('schedule-modal').classList.remove('hidden');
         }
 
@@ -435,6 +575,7 @@
 
         async function handleFormSubmit(e) {
             e.preventDefault();
+            const editId = document.getElementById('form-edit-id').value;
             const className = document.getElementById('form-class').value;
             const type = document.getElementById('form-type').value;
             const studentName = document.getElementById('form-student').value;
@@ -443,9 +584,15 @@
             const timeText = document.getElementById('form-date-text').value;
 
             try {
-                await db.collection("schedules").add({
-                    className, type, studentName, university, dateIso, timeText, createdAt: new Date()
-                });
+                if (editId) {
+                    await db.collection("schedules").doc(editId).update({
+                        className, type, studentName, university, dateIso, timeText
+                    });
+                } else {
+                    await db.collection("schedules").add({
+                        className, type, studentName, university, dateIso, timeText, createdAt: new Date()
+                    });
+                }
                 closeModal();
             } catch (error) {
                 alert("저장에 실패했습니다. Firebase 규칙을 확인하세요.");
