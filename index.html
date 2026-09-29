@@ -35,16 +35,23 @@
                     <span id="sync-status" class="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-medium">연결 중...</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <!-- 보기 방식 전환 버튼 -->
-                    <div class="bg-slate-100 p-1 rounded-lg flex space-x-1">
+                    <!-- 보기 방식 전환 -->
+                    <div class="bg-slate-100 p-1 rounded-lg flex space-x-1 mr-1">
                         <button id="btn-view-list" onclick="switchView('list')" class="px-3 py-1.5 rounded-md text-xs font-bold bg-white text-blue-600 shadow-sm transition">
-                            <i class="fa-solid fa-list mr-1"></i>목록보기
+                            <i class="fa-solid fa-list mr-1"></i>목록
                         </button>
                         <button id="btn-view-cal" onclick="switchView('calendar')" class="px-3 py-1.5 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition">
-                            <i class="fa-regular fa-calendar-days mr-1"></i>달력보기
+                            <i class="fa-regular fa-calendar-days mr-1"></i>달력
                         </button>
                     </div>
-                    <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg font-medium text-sm transition flex items-center shadow">
+
+                    <!-- 엑셀 일괄 등록 버튼 -->
+                    <button onclick="openBatchModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg font-medium text-xs transition flex items-center shadow">
+                        <i class="fa-solid fa-file-excel mr-1.5"></i> 엑셀 일괄 등록
+                    </button>
+
+                    <!-- 개별 등록 버튼 -->
+                    <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium text-xs transition flex items-center shadow">
                         <i class="fa-solid fa-plus mr-1.5"></i> 일정 등록
                     </button>
                 </div>
@@ -72,7 +79,7 @@
             </div>
         </div>
 
-        <!-- 검색 필터 (목록 보기용) -->
+        <!-- 검색 필터 -->
         <div id="filter-bar" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap gap-4 items-center justify-between">
             <div class="flex flex-wrap gap-3 items-center flex-1">
                 <div class="relative min-w-[200px]">
@@ -91,16 +98,16 @@
             </div>
         </div>
 
-        <!-- 1. 목록 보기 영역 -->
+        <!-- 1. 목록 보기 -->
         <div id="view-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
 
-        <!-- 2. 달력 보기 영역 -->
+        <!-- 2. 달력 보기 -->
         <div id="view-calendar-container" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hidden">
             <div id="calendar"></div>
         </div>
     </main>
 
-    <!-- 일정 등록 모달 -->
+    <!-- 개별 일정 등록 모달 -->
     <div id="schedule-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
             <div class="flex justify-between items-center mb-4">
@@ -112,23 +119,15 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">반 선택 *</label>
                         <select id="form-class" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                            <option value="1반">1반</option>
-                            <option value="2반">2반</option>
-                            <option value="3반">3반</option>
-                            <option value="4반">4반</option>
-                            <option value="5반">5반</option>
-                            <option value="6반">6반</option>
-                            <option value="7반">7반</option>
-                            <option value="8반">8반</option>
-                            <option value="9반">9반</option>
+                            <option value="1반">1반</option><option value="2반">2반</option><option value="3반">3반</option>
+                            <option value="4반">4반</option><option value="5반">5반</option><option value="6반">6반</option>
+                            <option value="7반">7반</option><option value="8반">8반</option><option value="9반">9반</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">구분 *</label>
                         <select id="form-type" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                            <option value="면접">면접</option>
-                            <option value="논술">논술</option>
-                            <option value="기타">기타</option>
+                            <option value="면접">면접</option><option value="논술">논술</option><option value="기타">기타</option>
                         </select>
                     </div>
                 </div>
@@ -150,6 +149,36 @@
                     <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-medium transition">저장하기</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 엑셀 일괄 등록 모달 -->
+    <div id="batch-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-slate-900">엑셀(CSV) 일괄 등록</h2>
+                <button onclick="closeBatchModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 space-y-1">
+                    <p class="font-bold">💡 엑셀 업로드 안내</p>
+                    <p>엑셀 파일 작성 후 <strong>[다른 이름으로 저장 ➔ CSV UTF-8]</strong> 형식으로 저장하여 업로드해 주세요.</p>
+                    <button onclick="downloadSampleCsv()" class="underline font-bold text-blue-600 hover:text-blue-800 mt-1 inline-block">
+                        <i class="fa-solid fa-download mr-1"></i>샘플 양식 다운로드
+                    </button>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">CSV 파일 선택</label>
+                    <input type="file" id="csv-file-input" accept=".csv" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <div class="flex space-x-2 pt-2">
+                    <button type="button" onclick="closeBatchModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-medium transition">취소</button>
+                    <button type="button" onclick="processCsvUpload()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-sm font-medium transition">일괄 올리기</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -302,6 +331,15 @@
             document.getElementById('schedule-modal').classList.add('hidden');
         }
 
+        function openBatchModal() {
+            document.getElementById('csv-file-input').value = '';
+            document.getElementById('batch-modal').classList.remove('hidden');
+        }
+
+        function closeBatchModal() {
+            document.getElementById('batch-modal').classList.add('hidden');
+        }
+
         async function handleFormSubmit(e) {
             e.preventDefault();
             const className = document.getElementById('form-class').value;
@@ -319,6 +357,72 @@
             } catch (error) {
                 alert("저장에 실패했습니다. Firebase 규칙을 확인하세요.");
             }
+        }
+
+        // CSV 파일 일괄 처리
+        async function processCsvUpload() {
+            const fileInput = document.getElementById('csv-file-input');
+            if (!fileInput.files.length) {
+                alert("CSV 파일을 선택해주세요.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n');
+                let count = 0;
+
+                const batch = db.batch();
+
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    const cols = line.split(',').map(col => col.trim().replace(/^"|"$/g, ''));
+                    if (cols.length >= 5) {
+                        const [className, type, studentName, university, dateIso, timeText] = cols;
+                        const docRef = db.collection("schedules").doc();
+                        batch.set(docRef, {
+                            className: className || '1반',
+                            type: type || '면접',
+                            studentName: studentName || '이름없음',
+                            university: university || '학교미정',
+                            dateIso: dateIso || '2026-10-01',
+                            timeText: timeText || '',
+                            createdAt: new Date()
+                        });
+                        count++;
+                    }
+                }
+
+                if (count > 0) {
+                    await batch.commit();
+                    alert(`${count}건의 일정이 성공적으로 등록되었습니다!`);
+                    closeBatchModal();
+                } else {
+                    alert("올바른 데이터 형식이 없습니다. 샘플 양식을 확인해주세요.");
+                }
+            };
+
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function downloadSampleCsv() {
+            const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+                + "학급,구분,학생이름,지원학교/학과,날짜(YYYY-MM-DD),시간\n"
+                + "1반,면접,홍길동,한국대학교 컴퓨터공학과,2026-10-15,14:00\n"
+                + "2반,논술,김철수,서울대학교 경영학과,2026-10-20,09:30";
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "면접논술_일정_양식.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         async function deleteSchedule(id) {
